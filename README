@@ -1,0 +1,161 @@
+An example of performance with async_sinatra with thin and rainbows.
+
+class AsyncTest < Sinatra::Base
+  register Sinatra::Async
+
+  enable :show_exceptions
+
+
+  get '/test_sync' do
+    "prova"
+  end
+
+  aget '/test_async' do 
+    body { ["prova async"] }
+  end
+  
+end
+
+with rainbow and 4 worker_processes i obtain:
+
+Requests per second:    805.41 [#/sec] (mean)
+Time per request:       124.16 [ms] (mean)
+Time per request:       1.24 [ms] (mean, across all concurrent requests)
+Transfer rate:          95.10 [Kbytes/sec] received
+
+with thin and one worker i obtain;
+
+Requests per second:    1747.95 [#/sec] (mean)
+Time per request:       57.21 [ms] (mean)
+Time per request:       0.57 [ms] (mean, across all concurrent requests)
+Transfer rate:          183.53 [Kbytes/sec] received
+
+How can be possible this? What difference have thin and rainbows with eventmachine? I have also test
+rainbows with one worker but this with only one worker is really fast.
+
+
+
+RAINBOW
+
+worker_processes 4
+
+Rainbows! do
+    use :EventMachine
+    worker_connections 400
+    client_max_body_size nil
+    keepalive_timeout 0
+end
+
+
+
+
+ab -n 10000 -c 100 http://localhost:8080/test_async
+This is ApacheBench, Version 1.3d <$Revision: 1.73 $> apache-1.3
+Copyright (c) 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Copyright (c) 2006 The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Finished 10000 requests
+Server Software:                                                           
+Server Hostname:        localhost
+Server Port:            8080
+
+Document Path:          /test_async
+Document Length:        11 bytes
+
+Concurrency Level:      100
+Time taken for tests:   12.416 seconds
+Complete requests:      10000
+Failed requests:        0
+Broken pipe errors:     0
+Total transferred:      1180708 bytes
+HTML transferred:       110066 bytes
+Requests per second:    805.41 [#/sec] (mean)
+Time per request:       124.16 [ms] (mean)
+Time per request:       1.24 [ms] (mean, across all concurrent requests)
+Transfer rate:          95.10 [Kbytes/sec] received
+
+Connnection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0     1    2.8      0    66
+Processing:     2   122   40.3    115   367
+Waiting:        0   122   40.3    115   367
+Total:          2   123   40.0    116   367
+
+Percentage of the requests served within a certain time (ms)
+  50%    116
+  66%    130
+  75%    141
+  80%    148
+  90%    172
+  95%    199
+  98%    241
+  99%    263
+ 100%    367 (last request)
+ 
+ 
+ 
+ THIN
+ 
+ ab -n 10000 -c 100 http://localhost:3000/test_async
+ This is ApacheBench, Version 1.3d <$Revision: 1.73 $> apache-1.3
+ Copyright (c) 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+ Copyright (c) 2006 The Apache Software Foundation, http://www.apache.org/
+
+ Benchmarking localhost (be patient)
+ Completed 1000 requests
+ Completed 2000 requests
+ Completed 3000 requests
+ Completed 4000 requests
+ Completed 5000 requests
+ Completed 6000 requests
+ Completed 7000 requests
+ Completed 8000 requests
+ Completed 9000 requests
+ Finished 10000 requests
+ Server Software:        thin                                               
+ Server Hostname:        localhost
+ Server Port:            3000
+
+ Document Path:          /test_async
+ Document Length:        11 bytes
+
+ Concurrency Level:      100
+ Time taken for tests:   5.721 seconds
+ Complete requests:      10000
+ Failed requests:        0
+ Broken pipe errors:     0
+ Total transferred:      1050000 bytes
+ HTML transferred:       110000 bytes
+ Requests per second:    1747.95 [#/sec] (mean)
+ Time per request:       57.21 [ms] (mean)
+ Time per request:       0.57 [ms] (mean, across all concurrent requests)
+ Transfer rate:          183.53 [Kbytes/sec] received
+
+ Connnection Times (ms)
+               min  mean[+/-sd] median   max
+ Connect:        0     1    0.9      0    14
+ Processing:    22    56   31.2     45   211
+ Waiting:       17    55   31.3     45   211
+ Total:         22    56   31.3     46   211
+
+ Percentage of the requests served within a certain time (ms)
+   50%     46
+   66%     48
+   75%     51
+   80%     57
+   90%     74
+   95%    166
+   98%    175
+   99%    187
+  100%    211 (last request)
+ 
